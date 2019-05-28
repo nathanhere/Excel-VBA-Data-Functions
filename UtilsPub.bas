@@ -1,4 +1,5 @@
 Attribute VB_Name = "Utils"
+
 '**************************************************************************
 '********************* FUNCTIONS PACKAGE ***********************************
 '**************************************************************************
@@ -28,7 +29,7 @@ Public Sub trim_data_fields(ByVal ws As Worksheet, ByVal fieldName As String)
 Dim i As Long
 
 For i = 2 To lastRow(ws)
-    ws.Cells(i, FieldColNum(ws, fieldName)) = trim(ws.Cells(i, FieldColNum(ws, fieldName)))
+    ws.Cells(i, FieldColNum(ws, fieldName)) = Trim(ws.Cells(i, FieldColNum(ws, fieldName)))
 Next i
 
 End Sub
@@ -40,7 +41,36 @@ Public Sub move_all_entries(ByVal wsSource As Worksheet, ByVal wsDest As Workshe
 wsDest.Range(wsDest.Cells(1, 1), wsDest.Cells(lastRow(wsSource), lastColNum(wsSource))) = wsSource.Range(wsSource.Cells(1, 1), wsSource.Cells(lastRow(wsSource), lastColNum(wsSource))).value
 
 End Sub
+Public Sub mergeWorksheets(ByVal wsSource As Worksheet, ByVal wsDest As Worksheet, ByVal sourceKey As String, ByVal destKey As String)
+'// Authored by  Nathan N on 1/14/2015
+'// Merges all fields of a source worksheet into a destination worksheet
+'// sourceKey must be located in column 1 (or col "A")
 
+Dim sourceColCount As Integer, destColCount As Integer
+Dim destFieldName As String
+Dim i As Long, j As Long
+
+sourceColCount = lastColNum(wsSource)
+destColCount = lastColNum(wsDest)
+
+If wsSource.Cells(1, 1) <> sourceKey Then
+    MsgBox ("SourceKey is not located in column 1 of the Source worksheet! Quitting mergeWorksheets routine!")
+    Exit Sub
+End If
+Application.ScreenUpdating = False
+
+For i = 1 To sourceColCount
+    If wsSource.Cells(1, i) = sourceKey Then GoTo NextColumn
+    '//destColNum = destColCount + i
+    destFieldName = wsSource.Cells(1, i)
+    vbaLookup2 wsDest, destFieldName, destKey, wsSource, sourceKey, destFieldName, , , , , , True
+NextColumn:
+Next i
+
+Application.ScreenUpdating = True
+
+
+End Sub
 Public Sub getMonthNameAndYear(ByVal ws As Worksheet, ByVal dateField As Worksheet, newDateFieldName As String)
 '// Inserts a condensed month name and year based on the original date field
 '// Added 7/2/2012 by Nathan N
@@ -134,7 +164,7 @@ Dim i As Long
 Application.DisplayAlerts = False
 Application.ScreenUpdating = False
 
-zipToCountyMappingPath = report_archive_path() & "\Vendor Network Reduction\ZipCodeAndCountyMappingData.xlsx"
+zipToCountyMappingPath = file_reference_path() & "\ZipCodeAndCountyMappingDataPub.xlsx"
 
 Set wb = ActiveWorkbook
 Set ws = wb.ActiveSheet
@@ -201,7 +231,7 @@ If stateColNum = -1 Then '//If no state field was found or listed, the program a
     listStates = True
     Set wbCounty = Workbooks.Open(zipToCountyMappingPath, , True)
     Set wsState = wbCounty.Worksheets.Add
-    wsState.Move , wbCounty.Worksheets(wbCounty.Worksheets.count)
+    wsState.Move , wbCounty.Worksheets(wbCounty.Worksheets.Count)
     wsState.Cells(1, 1) = "Zip Code"
     wsState.Cells(1, 2) = "City Name"
     wsState.Cells(1, 3) = "State"
@@ -243,9 +273,9 @@ If singleStateName = "" Then
 
         If stateColNum > 0 Then state = ws.Cells(i, stateColNum)
         zipCode = ws.Cells(i, FieldColNum(ws, zipcodeFieldName))
-        On Error GoTo ErrHandler
+        On Error GoTo errhandler
         Set wsCounty = wbCounty.Worksheets(state)
-        rngCounty.value = wsCounty.Cells(Application.WorksheetFunction.match(zipCode, wsCounty.Columns(FieldColNum(wsCounty, "ZIP Code")), 0), FieldColNum(wsCounty, "Primary County Name"))
+        rngCounty.value = wsCounty.Cells(Application.WorksheetFunction.Match(zipCode, wsCounty.Columns(FieldColNum(wsCounty, "ZIP Code")), 0), FieldColNum(wsCounty, "Primary County Name"))
         On Error GoTo 0
 NextZipCode:
     Next i
@@ -255,7 +285,7 @@ Else
         Set rngCounty = ws.Cells(i, FieldColNum(ws, "County"))
         zipCode = ws.Cells(i, FieldColNum(ws, zipcodeFieldName))
         On Error GoTo ErrHandler2
-        rngCounty.value = wsCounty.Cells(Application.WorksheetFunction.match(zipCode, wsCounty.Columns(FieldColNum(wsCounty, "ZIP Code")), 0), FieldColNum(wsCounty, "Primary County Name"))
+        rngCounty.value = wsCounty.Cells(Application.WorksheetFunction.Match(zipCode, wsCounty.Columns(FieldColNum(wsCounty, "ZIP Code")), 0), FieldColNum(wsCounty, "Primary County Name"))
         On Error GoTo 0
 NextZipCode2:
     Next i
@@ -264,22 +294,18 @@ End If
 wbCounty.Close
 Exit Sub
 
-ErrHandler:
-Err.clear
+errhandler:
+Err.Clear
 rngCounty.value = "0 Not Found"
 Resume NextZipCode
 
 ErrHandler2:
-Err.clear
+Err.Clear
 rngCounty.value = "0 Not Found"
 Resume NextZipCode2
 
 End Sub
-'Sub testtt()
-'Dim ws As Worksheet
-'Set ws = ActiveWorkbook.Worksheets("Sheet1")
-'zipcode_county_lookup ws, "ZipCode"
-'End Sub
+
 Public Sub zipcode_county_lookup(ByVal ws As Worksheet, ByVal zipcodeFieldName As String, Optional ByVal stateFieldName As String, Optional ByVal singleStateName As String, Optional ByVal listStates As Boolean)
 '// Matches zip codes with county names in worksheets with multiple states listed
 '// Authored by Nathan N on 6/11/2012
@@ -297,7 +323,7 @@ Dim i As Long
 
 Application.DisplayAlerts = False
 
-zipToCountyMappingPath = report_archive_path() & "\Vendor Network Reduction\ZipCodeAndCountyMappingData.xlsx"
+zipToCountyMappingPath = file_reference_path() & "\ZipCodeAndCountyMappingDataPub.xlsx"
 
 zipColNum = FieldColNum(ws, zipcodeFieldName, , True)
 countyColNum = zipColNum + 1
@@ -334,7 +360,7 @@ If stateColNum = -1 Then '//If no state field was found or listed, the program a
     listStates = True
     Set wbCounty = Workbooks.Open(zipToCountyMappingPath, , True)
     Set wsState = wbCounty.Worksheets.Add
-    wsState.Move , wbCounty.Worksheets(wbCounty.Worksheets.count)
+    wsState.Move , wbCounty.Worksheets(wbCounty.Worksheets.Count)
     wsState.Cells(1, 1) = "Zip Code"
     wsState.Cells(1, 2) = "City Name"
     wsState.Cells(1, 3) = "State"
@@ -373,9 +399,9 @@ If singleStateName = "" Then
 
         If stateColNum > 0 Then state = ws.Cells(i, stateColNum)
         zipCode = ws.Cells(i, FieldColNum(ws, zipcodeFieldName))
-        On Error GoTo ErrHandler
+        On Error GoTo errhandler
         Set wsCounty = wbCounty.Worksheets(state)
-        rngCounty.value = wsCounty.Cells(Application.WorksheetFunction.match(zipCode, wsCounty.Columns(FieldColNum(wsCounty, "ZIP Code")), 0), FieldColNum(wsCounty, "Primary County Name"))
+        rngCounty.value = wsCounty.Cells(Application.WorksheetFunction.Match(zipCode, wsCounty.Columns(FieldColNum(wsCounty, "ZIP Code")), 0), FieldColNum(wsCounty, "Primary County Name"))
         On Error GoTo 0
 NextZipCode:
     Next i
@@ -385,7 +411,7 @@ Else
         Set rngCounty = ws.Cells(i, FieldColNum(ws, "County"))
         zipCode = ws.Cells(i, FieldColNum(ws, zipcodeFieldName))
         On Error GoTo ErrHandler2
-        rngCounty.value = wsCounty.Cells(Application.WorksheetFunction.match(zipCode, wsCounty.Columns(FieldColNum(wsCounty, "ZIP Code")), 0), FieldColNum(wsCounty, "Primary County Name"))
+        rngCounty.value = wsCounty.Cells(Application.WorksheetFunction.Match(zipCode, wsCounty.Columns(FieldColNum(wsCounty, "ZIP Code")), 0), FieldColNum(wsCounty, "Primary County Name"))
         On Error GoTo 0
 NextZipCode2:
     Next i
@@ -394,13 +420,13 @@ End If
 wbCounty.Close
 Exit Sub
 
-ErrHandler:
-Err.clear
+errhandler:
+Err.Clear
 rngCounty.value = "0 Not Found"
 Resume NextZipCode
 
 ErrHandler2:
-Err.clear
+Err.Clear
 rngCounty.value = "0 Not Found"
 Resume NextZipCode2
 
@@ -428,9 +454,9 @@ End If
 ws.Columns(stateColNum).Insert
 ws.Cells(1, stateColNum) = "State"
 
-Set wbCounty = Workbooks.Open(report_archive_path() & "\Vendor Network Reduction\ZipCodeAndCountyMappingData.xlsx", , True)
+Set wbCounty = Workbooks.Open(file_reference_path() & "\ZipCodeAndCountyMappingDataPub.xlsx", , True)
 Set wsState = wbCounty.Worksheets.Add
-wsState.Move , wbCounty.Worksheets(wbCounty.Worksheets.count)
+wsState.Move , wbCounty.Worksheets(wbCounty.Worksheets.Count)
 wsState.Cells(1, 1) = "Zip Code"
 wsState.Cells(1, 2) = "City Name"
 wsState.Cells(1, 3) = "State"
@@ -443,7 +469,7 @@ Next wss
 
 Set wsCounty = wsState
 
-VbaLookup ws, "State", zipcodeFieldName, wsCounty, "ZIP Code", "State"
+vbaLookup ws, "State", zipcodeFieldName, wsCounty, "ZIP Code", "State"
 
 '// Check for unmatched items
 For i = 2 To lastRow(ws)
@@ -490,7 +516,7 @@ Public Function windows7os() As Boolean
 '* Authored by Nathan N on 6/4/2012
 '* Determines if user is using windows 7
 
-If left(Application.OperatingSystem, 21) = "Windows (32-bit) NT 5" Then
+If Left(Application.OperatingSystem, 21) = "Windows (32-bit) NT 5" Then
     windows7os = False
 Else
     windows7os = True
@@ -501,15 +527,12 @@ Public Function hub_path() As String
 '// Created by Nathan N on 7/9/2012
 hub_path = "\\hqclienthub\Client Hub"
 End Function
-Public Function report_archive_path() As String
+Public Function file_reference_path() As String
 '// Created by Nathan N on 7/9/2012
-report_archive_path = "\\colofs1\Vendor Team\CONTACT MANAGEMENT\CMT Reports"
+'// Helper function used avoid using long absolute file paths for common file resources
+'// You must specify the path within the quotations below.
+file_reference_path = ""
 End Function
-Public Function ref_path() As String
-'// Created by Nathan N on 7/12/2012
-ref_path = "\\colofs1\Vendor Team\CONTACT MANAGEMENT\CMT Reports\Reference\ClientReferenceList.xlsx"
-End Function
-
 
 Public Sub delete_empty_entries(ByVal ws As Worksheet, ByVal fieldName As String)
 'Authored by Nathan N on 4/9/2012
@@ -519,7 +542,7 @@ Dim i As Long
 For i = 2 To lastRow(ws)
     
     If (ws.Cells(i, FieldColNum(ws, fieldName)) = "") Then
-        ws.Rows(i).Delete shift:=xlUp
+        ws.Rows(i).Delete Shift:=xlUp
         i = i - 1
         If (i = lastRow(ws)) Then
             Exit For
@@ -611,11 +634,11 @@ If dateOnly = True Then
 End If
 
 If AMPM = True Then
-    timeStamp = time()
+    timeStamp = Time()
     timeStamp = Replace(timeStamp, ":", " ")
-    timeStamp = left(trim(timeStamp), 2)
-    timeStampAMPM = time()
-    timeStampAMPM = Right(trim(Now()), 2)
+    timeStamp = Left(Trim(timeStamp), 2)
+    timeStampAMPM = Time()
+    timeStampAMPM = Right(Trim(Now()), 2)
     DateStamp = timeStampAMPM
     Exit Function
 End If
@@ -623,11 +646,11 @@ End If
 If AMPMTimeStamp = True Then
     DateStamp = Date
     DateStamp = Replace(DateStamp, "/", " ")
-    timeStamp = time()
+    timeStamp = Time()
     timeStamp = Replace(timeStamp, ":", " ")
-    timeStamp = Replace(left(trim(timeStamp), 2), " ", "")
-    timeStampAMPM = time()
-    timeStampAMPM = Right(trim(Now()), 2)
+    timeStamp = Replace(Left(Trim(timeStamp), 2), " ", "")
+    timeStampAMPM = Time()
+    timeStampAMPM = Right(Trim(Now()), 2)
     AMPMAndDateStamp = timeStampAMPM & " - " & DateStamp
     timeAndDateStamp = timeStamp & " " & timeStampAMPM & " - " & DateStamp
     DateStamp = timeAndDateStamp
@@ -637,11 +660,11 @@ End If
 If AMPMDateStamp = True Then
     DateStamp = Date
     DateStamp = Replace(DateStamp, "/", " ")
-    timeStamp = time()
+    timeStamp = Time()
     timeStamp = Replace(timeStamp, ":", " ")
-    timeStamp = left(trim(timeStamp), 2)
-    timeStampAMPM = time()
-    timeStampAMPM = Right(trim(Now()), 2)
+    timeStamp = Left(Trim(timeStamp), 2)
+    timeStampAMPM = Time()
+    timeStampAMPM = Right(Trim(Now()), 2)
     AMPMAndDateStamp = timeStampAMPM & " - " & DateStamp
     DateStamp = AMPMAndDateStamp
     Exit Function
@@ -681,12 +704,12 @@ If copyHeader <> False Then
     copyHeader = True
 End If
 
-lastRowCurrent = sourceSheet.Range("A" & Rows.count).End(xlUp).row
-origRowCount = sourceSheet.Range("A" & Rows.count).End(xlUp).row
+lastRowCurrent = sourceSheet.Range("A" & Rows.Count).End(xlUp).Row
+origRowCount = sourceSheet.Range("A" & Rows.Count).End(xlUp).Row
 
 If copyHeader = True Then
     destSheet.Rows(1) = sourceSheet.Rows(1).value
-    lastRowDest = destSheet.Range("A" & Rows.count).End(xlUp).row
+    lastRowDest = destSheet.Range("A" & Rows.Count).End(xlUp).Row
 End If
 
 For i = 2 To lastRowCurrent
@@ -695,7 +718,7 @@ For i = 2 To lastRowCurrent
 
     If InStr(1, copyValues, currentCellValue) >= 1 Then
         destSheet.Rows(lastRowDest + 1) = sourceSheet.Rows(inverseRowNum).value
-        lastRowDest = destSheet.Range("A" & Rows.count).End(xlUp).row
+        lastRowDest = destSheet.Range("A" & Rows.Count).End(xlUp).Row
     End If
     
 Next i
@@ -712,12 +735,12 @@ If copyHeader = "" Then
     copyHeader = True
 End If
 
-lastRow = sourceSheet.Range(colLet & Rows.count).End(xlUp).row
-origRowCount = sourceSheet.Range(colLet & Rows.count).End(xlUp).row
+lastRow = sourceSheet.Range(colLet & Rows.Count).End(xlUp).Row
+origRowCount = sourceSheet.Range(colLet & Rows.Count).End(xlUp).Row
 
 If copyHeader = True Then
     destSheet.Rows(1) = sourceSheet.Rows(1).value
-    lastRowDest = destSheet.Range("A" & Rows.count).End(xlUp).row
+    lastRowDest = destSheet.Range("A" & Rows.Count).End(xlUp).Row
 End If
 
 For i = 2 To lastRow
@@ -726,8 +749,8 @@ For i = 2 To lastRow
 
     If InStr(1, cutValues, currentCellValue) >= 1 Then
         destSheet.Rows(lastRowDest + 1) = sourceSheet.Rows(inverseRowNum).value
-        lastRowDest = destSheet.Range("A" & Rows.count).End(xlUp).row
-        sourceSheet.Rows(inverseRowNum).Delete shift:=xlUp
+        lastRowDest = destSheet.Range("A" & Rows.Count).End(xlUp).Row
+        sourceSheet.Rows(inverseRowNum).Delete Shift:=xlUp
     End If
     
 Next i
@@ -751,9 +774,9 @@ If headerRowNum = 0 Then
 End If
 
 ws.Activate
-ws.Sort.SortFields.clear
+ws.Sort.SortFields.Clear
 ws.Sort.SortFields.Add ws.Cells(headerRowNum, sortColNum)
-ws.Sort.header = xlNo
+ws.Sort.Header = xlNo
 ws.Sort.MatchCase = False
 ws.Sort.SetRange ws.Range(Cells(headerRowNum + 1, 1), Cells(lastRow(ws), lastColNum(ws)))
 'Application.Visible = True
@@ -784,14 +807,14 @@ End If
 If headerRowNum = 0 Then headerRowNum = 1
 
 ws.Activate
-ws.Sort.SortFields.clear
+ws.Sort.SortFields.Clear
 ws.Sort.SortFields.Add ws.Cells(headerRowNum, sortColNum1)
 
 If FieldExists(ws, fieldName2) And (fieldName2 <> "") Then ws.Sort.SortFields.Add ws.Cells(headerRowNum, sortColNum2)
 
 If FieldExists(ws, fieldName3) And (fieldName3 <> "") Then ws.Sort.SortFields.Add ws.Cells(headerRowNum, sortColNum3)
 
-ws.Sort.header = xlNo
+ws.Sort.Header = xlNo
 ws.Sort.MatchCase = False
 ws.Sort.SetRange ws.Range(Cells(headerRowNum + 1, 1), Cells(lastRow(ws), lastColNum(ws)))
 'Application.Visible = True
@@ -807,7 +830,7 @@ Dim colNum As Integer
 
 colNum = FieldColNum(ws, fieldName)
 
-ws.Range(ws.Cells(1, 1), ws.Cells(lastRow(ws), lastColNum(ws))).RemoveDuplicates Columns:=colNum, header:=xlYes
+ws.Range(ws.Cells(1, 1), ws.Cells(lastRow(ws), lastColNum(ws))).RemoveDuplicates Columns:=colNum, Header:=xlYes
 
 End Sub
 Public Function lastRow(ByVal ws As Worksheet, Optional ByVal colLet As String, Optional ByVal colNum As Integer, Optional ByVal startRow As Long) As Long
@@ -829,12 +852,12 @@ Public Function lastRow(ByVal ws As Worksheet, Optional ByVal colLet As String, 
 If colLet = "" And colNum = 0 Then colLet = "A"
 
 If colLet <> "" And startRow = 0 Then
-    lastRow = ws.Range(colLet & Rows.count).End(xlUp).row
+    lastRow = ws.Range(colLet & Rows.Count).End(xlUp).Row
     Exit Function
 End If
 
 If colLet = "" And colNum > 0 And startRow = 0 Then
-    lastRow = ws.Cells(Rows.count, colNum).End(xlUp).row
+    lastRow = ws.Cells(Rows.Count, colNum).End(xlUp).Row
     Exit Function
 End If
 
@@ -842,7 +865,7 @@ If (colNum = 0) Then colNum = 1
 If (startRow = 0) Then startRow = 1
 
 If colNum = 1 And startRow = 1 Then
-    lastRow = ws.Range("A" & Rows.count).End(xlUp).row
+    lastRow = ws.Range("A" & Rows.Count).End(xlUp).Row
     Exit Function
 End If
 
@@ -874,18 +897,18 @@ Public Function lastColNum(ByVal ws As Worksheet, Optional ByVal rowNum As Long 
 Dim i As Integer
 
 If ignoreBreaks Then
-    lastColNum = ws.UsedRange.Columns.count
+    lastColNum = ws.UsedRange.Columns.Count
     Exit Function
 End If
 
-For i = 1 To ws.UsedRange.Columns.count + 1
+For i = 1 To ws.UsedRange.Columns.Count + 1
     If ws.Cells(rowNum, i) = "" Then
         lastColNum = i - 1
         Exit For
     End If
 Next i
 
-If lastColNum = 0 Then lastColNum = ws.UsedRange.Columns.count
+If lastColNum = 0 Then lastColNum = ws.UsedRange.Columns.Count
 
 End Function
 Public Function LastColtoLet(ByVal currentSheet As Worksheet) As String
@@ -915,7 +938,7 @@ letArray = Array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"
 maxArrayCount = (Application.WorksheetFunction.CountA(letArray))
 ReDim Preserve letArray(0 To maxArrayCount - 1)
 
-lastCol = currentSheet.UsedRange.Columns.count
+lastCol = currentSheet.UsedRange.Columns.Count
 
 LastColtoLet = letArray(lastCol - 1)
 
@@ -1002,7 +1025,7 @@ letArray = Array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"
 maxArrayCount = (Application.WorksheetFunction.CountA(letArray))
 ReDim Preserve letArray(0 To maxArrayCount - 1)
 
-FieldColNum = Application.WorksheetFunction.match(fieldName, currentSheet.Rows(rowNum), 0)
+FieldColNum = Application.WorksheetFunction.Match(fieldName, currentSheet.Rows(rowNum), 0)
 FieldColLet = letArray(FieldColNum - 1)
 
 End Function
@@ -1049,8 +1072,9 @@ If InStr(1, " ", fieldName) Then 'This takes into account the two different type
 
 Else
     On Error Resume Next
-    FieldColNum = Application.WorksheetFunction.match(fieldName, ws.Rows(rowNum), 0)
-    If (FieldColNum = 0) Then FieldColNum = Application.WorksheetFunction.match(CInt(fieldName), ws.Rows(rowNum), 0)
+    FieldColNum = Application.WorksheetFunction.Match(fieldName, ws.Rows(rowNum), 0)
+    If (FieldColNum = 0) Then FieldColNum = Application.WorksheetFunction.Match(CInt(fieldName), ws.Rows(rowNum), 0)
+    If (FieldColNum = 0) Then FieldColNum = Application.WorksheetFunction.Match(CDec(fieldName), ws.Rows(rowNum), 0)
     If (FieldColNum = 0) Then '// If the function fails, return -1
         FieldColNum = -1
         Exit Function
@@ -1184,7 +1208,7 @@ If (fromBottom = True) Then
     If colNum = 0 Then
         On Error Resume Next
         colLet = "A"
-        rowNum = Application.WorksheetFunction.match(fieldName, ws.Columns(colLet & ":" & colLet), 0)
+        rowNum = Application.WorksheetFunction.Match(fieldName, ws.Columns(colLet & ":" & colLet), 0)
         fieldFound = True
         FieldRowNum = rowNum
         On Error GoTo 0
@@ -1221,7 +1245,7 @@ Else
         If colNum = 0 Then
             On Error Resume Next
             colLet = "A"
-            rowNum = Application.WorksheetFunction.match(fieldName, ws.Columns(colLet & ":" & colLet), 0)
+            rowNum = Application.WorksheetFunction.Match(fieldName, ws.Columns(colLet & ":" & colLet), 0)
             fieldFound = True
             FieldRowNum = rowNum
             On Error GoTo 0
@@ -1259,7 +1283,7 @@ Else
         If colNum = 0 Then
             On Error Resume Next
             colLet = "A"
-            rowNum = Application.WorksheetFunction.match(fieldName, ws.Columns(colLet & ":" & colLet), 0)
+            rowNum = Application.WorksheetFunction.Match(fieldName, ws.Columns(colLet & ":" & colLet), 0)
             fieldFound = True
             FieldRowNum = rowNum
             On Error GoTo 0
@@ -1285,13 +1309,14 @@ End Function
 Public Sub vbaLookup2(ByVal wsDest As Worksheet, ByVal destField As String, ByVal destKeyField As String, _
     ByVal wsSource As Worksheet, ByVal sourceKeyField As String, Optional ByVal sourceValueField As String, _
     Optional insertNewColumn As Boolean, Optional keyFoundValue As String, Optional keyNotFoundValue As String, _
-    Optional ByVal destStartRow As Long, Optional ByVal sourceStartRow As Long)
+    Optional ByVal destStartRow As Long, Optional ByVal sourceStartRow As Long, Optional ByVal createNewLastColumn As Boolean)
 '// Authored by Nathan N on 7/2/2012
+'// Updated 1/16/2015
 '// Improved version of the vbaLookup. Uses the a dictionary object (built into other languages) that fills with key-value pairs.
  '  --Measured exponential speed savings as data set gets larger (very large data sets took longer than 10 minutes with the old vbaLookup, but with vbaLookup2 it took 40 seconds)
  '  --Option for new column to be inserted into the destination workbook which takes on the destField as the column title
  '  --Can return optional custom value (instead of matched value)blank or optional value if Key is not found in dictionary
- '      If keyFoundValue is used then sourceValueField is not required, and in fact will be ignored.
+ '      If keyFoundValue is used, then sourceValueField is not required, and in fact will be ignored.
  
  '// Future Improvements: Create multiple dictionaries, or 'buckets,' with the quantity of buckets increasing with proportion to the most
  '// common first few characters
@@ -1321,7 +1346,10 @@ If insertNewColumn = True Then
         If FieldExists(wsDest, destField, , True) Then Debug.Print "vbaLookup2 Warning: Destination Field Name Already Exists"
     End If
     destFieldCol = destKeyCol + 1
-    wsDest.Columns(destFieldCol).Insert shift:=xlRight
+    wsDest.Columns(destFieldCol).Insert Shift:=xlRight
+    wsDest.Cells(1, destFieldCol) = destField
+ElseIf createNewLastColumn = True Then
+    destFieldCol = lastColNum(wsDest) + 1
     wsDest.Cells(1, destFieldCol) = destField
 Else
     If FieldExists(wsDest, destField) Then
@@ -1383,7 +1411,7 @@ Set d = Nothing
 
 End Sub
 
-Public Sub VbaLookup(ByVal currentSheet As Worksheet, ByVal destField As String, ByVal matchField As String, ByVal sourceSheet As Worksheet, ByVal sourceMatchField As String, ByVal sourceMatchDataField As String, Optional ByVal destMatchFieldRowNum As Long, Optional ByVal sourceFieldRowNum As Long)
+Public Sub vbaLookup(ByVal currentSheet As Worksheet, ByVal destField As String, ByVal matchField As String, ByVal sourceSheet As Worksheet, ByVal sourceMatchField As String, ByVal sourceMatchDataField As String, Optional ByVal destMatchFieldRowNum As Long, Optional ByVal sourceFieldRowNum As Long)
 '**** 1/31/2012 ****
 'Updated 3/1/2012 at 5:24PM     - Added Error notifications for unknown clients to be added to the client list
 'Updated 3/2/2012 at 1:16PM    - Added destFieldRowNum Option and sourceFieldRowNum Option
@@ -1400,15 +1428,15 @@ If (sourceFieldRowNum = 0) Then
     sourceFieldRowNum = 1
 End If
 
-destFieldColNum = Application.WorksheetFunction.match(destField, currentSheet.Rows(destMatchFieldRowNum), 0)
-matchFieldColNum = Application.WorksheetFunction.match(matchField, currentSheet.Rows(destMatchFieldRowNum), 0)
-sourceMatchFieldColNum = Application.WorksheetFunction.match(sourceMatchField, sourceSheet.Rows(sourceFieldRowNum), 0)
-sourceMatchDataFieldColNum = Application.WorksheetFunction.match(sourceMatchDataField, sourceSheet.Rows(sourceFieldRowNum), 0)
+destFieldColNum = Application.WorksheetFunction.Match(destField, currentSheet.Rows(destMatchFieldRowNum), 0)
+matchFieldColNum = Application.WorksheetFunction.Match(matchField, currentSheet.Rows(destMatchFieldRowNum), 0)
+sourceMatchFieldColNum = Application.WorksheetFunction.Match(sourceMatchField, sourceSheet.Rows(sourceFieldRowNum), 0)
+sourceMatchDataFieldColNum = Application.WorksheetFunction.Match(sourceMatchDataField, sourceSheet.Rows(sourceFieldRowNum), 0)
 
 For i = destMatchFieldRowNum + 1 To lastRow(currentSheet, , , destMatchFieldRowNum)
     'Debug.Print lastRow(currentSheet, , , destMatchFieldRowNum)
     On Error GoTo ErrHandlerClient
-    sourceMatchRow = Application.WorksheetFunction.match(currentSheet.Cells(i, matchFieldColNum).value, sourceSheet.Columns(sourceMatchFieldColNum), 0)
+    sourceMatchRow = Application.WorksheetFunction.Match(currentSheet.Cells(i, matchFieldColNum).value, sourceSheet.Columns(sourceMatchFieldColNum), 0)
     currentSheet.Cells(i, destFieldColNum).value = sourceSheet.Cells(sourceMatchRow, sourceMatchDataFieldColNum).value
     
 NextItem:
@@ -1421,7 +1449,7 @@ Application.ScreenUpdating = False
 Exit Sub
 
 ErrHandlerClient:
-    Err.clear
+    Err.Clear
     If (InStr(1, LCase(currentSheet.Cells(1, matchFieldColNum)), "client") > 0) Then
         EmailWhoever "user@domain.com", "", "Unknown client """ & currentSheet.Cells(i, matchFieldColNum) & """ listed in workbook """ & currentSheet.Parent.Name & """ in worksheet " & currentSheet.Name
         currentSheet.Cells(i, matchFieldColNum + 1) = "[UNKNOWN CLIENT]"
@@ -1447,18 +1475,18 @@ If (sourceFieldRowNum = 0) Then
     sourceFieldRowNum = 1
 End If
 
-destFieldColNum = Application.WorksheetFunction.match(destField, currentSheet.Rows(matchFieldRowNum), 0)
-If listStates = True Then stateFieldColNum = Application.WorksheetFunction.match("State", currentSheet.Rows(matchFieldRowNum), 0)
-matchFieldColNum = Application.WorksheetFunction.match(matchField, currentSheet.Rows(matchFieldRowNum), 0)
-sourceMatchFieldColNum = Application.WorksheetFunction.match(sourceMatchField, sourceSheet.Rows(sourceFieldRowNum), 0)
-sourceMatchDataFieldColNum = Application.WorksheetFunction.match(sourceMatchDataField, sourceSheet.Rows(sourceFieldRowNum), 0)
-If listStates = True Then sourceMatchStateDataFieldColNum = Application.WorksheetFunction.match("State", sourceSheet.Rows(sourceFieldRowNum), 0)
+destFieldColNum = Application.WorksheetFunction.Match(destField, currentSheet.Rows(matchFieldRowNum), 0)
+If listStates = True Then stateFieldColNum = Application.WorksheetFunction.Match("State", currentSheet.Rows(matchFieldRowNum), 0)
+matchFieldColNum = Application.WorksheetFunction.Match(matchField, currentSheet.Rows(matchFieldRowNum), 0)
+sourceMatchFieldColNum = Application.WorksheetFunction.Match(sourceMatchField, sourceSheet.Rows(sourceFieldRowNum), 0)
+sourceMatchDataFieldColNum = Application.WorksheetFunction.Match(sourceMatchDataField, sourceSheet.Rows(sourceFieldRowNum), 0)
+If listStates = True Then sourceMatchStateDataFieldColNum = Application.WorksheetFunction.Match("State", sourceSheet.Rows(sourceFieldRowNum), 0)
 
-If listStates = True Then stateMatchFieldColNum = Application.WorksheetFunction.match("State", currentSheet.Rows(matchFieldRowNum), 0)
+If listStates = True Then stateMatchFieldColNum = Application.WorksheetFunction.Match("State", currentSheet.Rows(matchFieldRowNum), 0)
 
 For i = matchFieldRowNum + 1 To lastRow(currentSheet, , , matchFieldRowNum)
     On Error GoTo ErrHandlerClient
-    sourceMatchRow = Application.WorksheetFunction.match(currentSheet.Cells(i, matchFieldColNum).value, sourceSheet.Columns(sourceMatchFieldColNum), 0)
+    sourceMatchRow = Application.WorksheetFunction.Match(currentSheet.Cells(i, matchFieldColNum).value, sourceSheet.Columns(sourceMatchFieldColNum), 0)
     currentSheet.Cells(i, destFieldColNum).value = sourceSheet.Cells(sourceMatchRow, sourceMatchDataFieldColNum).value
     If listStates = True Then
         currentSheet.Cells(i, stateFieldColNum).value = sourceSheet.Cells(sourceMatchRow, sourceMatchStateDataFieldColNum).value
@@ -1471,7 +1499,7 @@ On Error GoTo 0
 Exit Sub
 
 ErrHandlerClient:
-    Err.clear
+    Err.Clear
     If (InStr(1, LCase(currentSheet.Cells(1, matchFieldColNum)), "client") > 0) Then
         EmailWhoever "user@domain.com", "", "Unknown client """ & currentSheet.Cells(i, matchFieldColNum) & """ listed in workbook """ & currentSheet.Parent.Name & """ in worksheet " & currentSheet.Name
         currentSheet.Cells(i, matchFieldColNum + 1) = "[UNKNOWN CLIENT]"
@@ -1515,26 +1543,26 @@ Else
     colLet = ColNumToLet(currentSheet, lastColNum(currentSheet))
 End If
 
-    lastRow = currentSheet.Range(colLet & Rows.count).End(xlUp).row - 1
+    lastRow = currentSheet.Range(colLet & Rows.Count).End(xlUp).Row - 1
     
     currentSheet.Range(colLet & startRow & ":" & colLet & lastRow).FormatConditions.Delete
     
     currentSheet.Range(colLet & startRow & ":" & colLet & lastRow).FormatConditions.AddColorScale ColorScaleType:=3
-    currentSheet.Range(colLet & startRow & ":" & colLet & lastRow).FormatConditions(currentSheet.Range(colLet & startRow & ":" & colLet & lastRow).FormatConditions.count).SetFirstPriority
+    currentSheet.Range(colLet & startRow & ":" & colLet & lastRow).FormatConditions(currentSheet.Range(colLet & startRow & ":" & colLet & lastRow).FormatConditions.Count).SetFirstPriority
     currentSheet.Range(colLet & startRow & ":" & colLet & lastRow).FormatConditions(1).ColorScaleCriteria(1).Type = xlConditionValueLowestValue
     With currentSheet.Range(colLet & startRow & ":" & colLet & lastRow).FormatConditions(1).ColorScaleCriteria(1).FormatColor
-        .color = 13011546
+        .Color = 13011546
         .TintAndShade = 0
     End With
     currentSheet.Range(colLet & startRow & ":" & colLet & lastRow).FormatConditions(1).ColorScaleCriteria(2).Type = xlConditionValuePercentile
     currentSheet.Range(colLet & startRow & ":" & colLet & lastRow).FormatConditions(1).ColorScaleCriteria(2).value = 50
     With currentSheet.Range(colLet & startRow & ":" & colLet & lastRow).FormatConditions(1).ColorScaleCriteria(2).FormatColor
-        .color = 8711167
+        .Color = 8711167
         .TintAndShade = 0
     End With
     currentSheet.Range(colLet & startRow & ":" & colLet & lastRow).FormatConditions(1).ColorScaleCriteria(3).Type = xlConditionValueHighestValue
     With currentSheet.Range(colLet & startRow & ":" & colLet & lastRow).FormatConditions(1).ColorScaleCriteria(3).FormatColor
-        .color = 7039480
+        .Color = 7039480
         .TintAndShade = 0
     End With
 
@@ -1554,7 +1582,7 @@ Dim cs As ColorScale
 
 If colNum > 0 Then colLet = ColNumToLet(currentSheet, colNum)
 
-lastRow = currentSheet.Range(colLet & Rows.count).End(xlUp).row - 1
+lastRow = currentSheet.Range(colLet & Rows.Count).End(xlUp).Row - 1
 
 currentSheet.Range(colLet & startRow & ":" & colLet & lastRow).FormatConditions.Delete
 
@@ -1562,15 +1590,15 @@ Set cs = currentSheet.Range(colLet & startRow & ":" & colLet & lastRow).FormatCo
 
 cs.ColorScaleCriteria(1).Type = xlConditionValueNumber
 cs.ColorScaleCriteria(1).value = 0.95
-cs.ColorScaleCriteria(1).FormatColor.color = 7039480
+cs.ColorScaleCriteria(1).FormatColor.Color = 7039480
 
 cs.ColorScaleCriteria(2).Type = xlConditionValueNumber
 cs.ColorScaleCriteria(2).value = 0.8
-cs.ColorScaleCriteria(2).FormatColor.color = 8711167
+cs.ColorScaleCriteria(2).FormatColor.Color = 8711167
 
 cs.ColorScaleCriteria(3).Type = xlConditionValueNumber
 cs.ColorScaleCriteria(3).value = 0.7
-cs.ColorScaleCriteria(3).FormatColor.color = 13011546
+cs.ColorScaleCriteria(3).FormatColor.Color = 13011546
 
 End Sub
 Public Function createPivot(ByVal sourceSheet As Worksheet, ByVal destSheet As Worksheet, ByVal destCell As String, ByVal pivotName As String, _
@@ -1613,7 +1641,7 @@ Dim i As Long
 'lastRowP = lastRow(sourceSheet)
 
 If (lastCol = 0) Then
-    For i = 1 To sourceSheet.UsedRange.Columns.count + 1
+    For i = 1 To sourceSheet.UsedRange.Columns.Count + 1
         If (sourceSheet.Cells(1, i) = "") Then
             lastCol = i - 1
             Exit For
@@ -1632,37 +1660,37 @@ sourceRange = sourceSheet.Name & "!R1C1:R" & lastRow(sourceSheet) & "C" & lastCo
     If colItem1 <> "" Then
         With destSheet.PivotTables(pivotName).PivotFields(colItem1)
             .Orientation = xlColumnField
-            .position = 1
+            .Position = 1
         End With
     End If
     If rowItem1 <> "" Then
         With destSheet.PivotTables(pivotName).PivotFields(rowItem1)
             .Orientation = xlRowField
-            .position = 1
+            .Position = 1
         End With
     End If
     If rowItem2 <> "" Then
         With destSheet.PivotTables(pivotName).PivotFields(rowItem2)
             .Orientation = xlRowField
-            .position = 2
+            .Position = 2
         End With
     End If
     If rowItem3 <> "" Then
         With destSheet.PivotTables(pivotName).PivotFields(rowItem3)
             .Orientation = xlRowField
-            .position = 3
+            .Position = 3
         End With
     End If
     If colItem2 <> "" Then
         With destSheet.PivotTables(pivotName).PivotFields(colItem2)
             .Orientation = xlColumnField
-            .position = 2
+            .Position = 2
         End With
     End If
     If colItem3 <> "" Then
         With destSheet.PivotTables(pivotName).PivotFields(colItem3)
             .Orientation = xlColumnField
-            .position = 3
+            .Position = 3
         End With
     End If
     If titleName <> "" Then
@@ -1680,7 +1708,7 @@ Public Sub CreatePivotFromExisting(ByVal sourceSheet As Worksheet, ByVal sourceP
 '*** it does not support Sum.
 '*********************************************************
 
-Dim pc As PivotCache, pt As pivotTable
+Dim pc As PivotCache, pt As PivotTable
 
 'Set pc = wb.PivotCache(sourcePivotName)
 'Set pt = wb.CreatePivotTable destSheet.Range(destCell), destPivotName, True
@@ -1694,37 +1722,37 @@ pt.AddDataField pt.PivotFields(countItem), "Count of " & countItem, xlCount
     If colItem1 <> "" Then
         With pt.PivotFields(colItem1)
             .Orientation = xlColumnField
-            .position = 1
+            .Position = 1
         End With
     End If
     If rowItem1 <> "" Then
         With pt.PivotFields(rowItem1)
             .Orientation = xlRowField
-            .position = 1
+            .Position = 1
         End With
     End If
     If rowItem2 <> "" Then
         With destSheet.PivotTables(destPivotName).PivotFields(rowItem2)
             .Orientation = xlRowField
-            .position = 2
+            .Position = 2
         End With
     End If
     If rowItem3 <> "" Then
         With destSheet.PivotTables(destPivotName).PivotFields(rowItem3)
             .Orientation = xlRowField
-            .position = 3
+            .Position = 3
         End With
     End If
     If colItem2 <> "" Then
         With destSheet.PivotTables(destPivotName).PivotFields(colItem2)
             .Orientation = xlColumnField
-            .position = 2
+            .Position = 2
         End With
     End If
     If colItem3 <> "" Then
         With destSheet.PivotTables(destPivotName).PivotFields(colItem3)
             .Orientation = xlColumnField
-            .position = 3
+            .Position = 3
         End With
     End If
     
@@ -1873,7 +1901,7 @@ If (exactMatch = False) Then
 Else
 
     On Error Resume Next
-    fieldNameLoc = Application.WorksheetFunction.match(fieldName, currentSheet.Rows(rowNum), 0)
+    fieldNameLoc = Application.WorksheetFunction.Match(fieldName, currentSheet.Rows(rowNum), 0)
     
     If fieldNameLoc > 0 Then
         FieldExists = True
@@ -1909,6 +1937,7 @@ Public Sub EmailWhoever(recipients As String, Optional BCC_Recipients As String,
 
 '*********************************************************
 '*** Authored by Nathan N, on 5/1/2009
+'*** Note that "signLoc" may be different on your system, and should be adjusted accordingly.
 '*** Updated on 5/22/2012 - added option for text in body (txtBody). Also removed conditionals that were not needed.
 '*** Updated on 2/1/2012 - replaced loginName strings with loginName() function
 '***
@@ -1932,7 +1961,7 @@ If Len(signatureName) > 1 Then
 
     signLoc = "C:\Documents and Settings\" & loginName() & "\Application Data\Microsoft\Signatures\" & signatureName & ".htm"
     
-    If dir(signLoc) <> "" Then
+    If Dir(signLoc) <> "" Then
         signature = GetBoiler(signLoc)
     Else
         signature = ""
@@ -2005,11 +2034,11 @@ Public Function FileExists(ByVal fileLocation As String) As Boolean
 '// Authored by Nathan N on 6/5/2012
 '// Checks to see if a certain file
 
-    FileExists = (dir(fileLocation) > "")
+    FileExists = (Dir(fileLocation) > "")
 End Function
 Public Function FileThere(ByVal fileLocation As String) As Boolean
 '// DEPRECIATED - 6/5/2012
-    FileThere = (dir(fileLocation) > "")
+    FileThere = (Dir(fileLocation) > "")
 End Function
 Public Function GetBoiler(ByVal sFile As String) As String
     Dim fso As Object
@@ -2028,13 +2057,13 @@ Public Function DivideText(ByVal txt As String, ByVal target1 As String, ByVal t
     pos = InStr(txt, target1)
     If pos = 0 Then Exit Function
     
-    before = left$(txt, pos - 1)
+    before = Left$(txt, pos - 1)
         ' Remove up to target1 from the string.
     txt = Mid$(txt, pos + Len(target1))
     
     pos = InStr(txt, target2)
     'pos = 5
-    between = left(txt, pos - 1)
+    between = Left(txt, pos - 1)
         ' Remove up to target2 from the string.
     txt = Mid(txt, pos + Len(target2))
         ' Set between.
@@ -2046,7 +2075,7 @@ Public Function DivideText(ByVal txt As String, ByVal target1 As String, ByVal t
 DivideText = between
 Exit Function
 
-ErrHandler:
+errhandler:
 DivideText = ""
 End Function
 Public Sub waitForIE(ByVal IEObject As Object)
@@ -2098,7 +2127,7 @@ Private Function IsTime(sTime As String) As Boolean
 'http://www.freevbcode.com/ShowCode.Asp?ID=1321
 'by Phil Fresle
 
-    If left(trim(sTime), 1) Like "#" Then
+    If Left(Trim(sTime), 1) Like "#" Then
         IsTime = IsDate(Date & " " & sTime)
     End If
 End Function
@@ -2159,7 +2188,7 @@ If (serviceStr1 <> "" And serviceStr2 = "" And serviceStr3 = "") Then
         If i > origRowCount - delCount Then Exit Sub '// This ensures that the function exits as soon as it reaches the NEW last row after all the deletions
         currentService = LCase(ws.Cells(i, serviceColNum))
         If currentService Like "*" & serviceStr1 & "*" Then
-            ws.Rows(i).Delete shift:=xlUp
+            ws.Rows(i).Delete Shift:=xlUp
             i = i - 1
             delCount = delCount + 1
             GoTo NextEntry1
@@ -2175,7 +2204,7 @@ ElseIf (serviceStr1 <> "" And serviceStr2 <> "" And serviceStr3 = "") Then
         currentService = LCase(ws.Cells(i, serviceColNum))
         If (currentService Like "*" & serviceStr1 & "*") _
         Or (currentService Like "*" & serviceStr2 & "*") Then
-            ws.Rows(i).Delete shift:=xlUp
+            ws.Rows(i).Delete Shift:=xlUp
             i = i - 1
             delCount = delCount + 1
             GoTo NextEntry2
@@ -2192,7 +2221,7 @@ ElseIf (serviceStr1 <> "" And serviceStr2 <> "" And serviceStr3 <> "") Then
         If currentService Like "*" & serviceStr1 & "*" _
         Or currentService Like "*" & serviceStr2 & "*" _
         Or currentService Like "*" & serviceStr3 & "*" Then
-            ws.Rows(i).Delete shift:=xlUp
+            ws.Rows(i).Delete Shift:=xlUp
             i = i - 1
             delCount = delCount + 1
             GoTo NextEntry3
@@ -2216,7 +2245,7 @@ entryStr2 = LCase(entryStr2)
 fieldName1 = LCase(fieldName1)
 fieldName2 = LCase(fieldName2)
 
-origRowCount = ws.Range("A" & Rows.count).End(xlUp).row
+origRowCount = ws.Range("A" & Rows.Count).End(xlUp).Row
 entryColNumA = FieldColNum(ws, fieldName1)
 entryColNumB = FieldColNum(ws, fieldName2)
 
@@ -2230,7 +2259,7 @@ For i = 2 To lastRow(ws)
     If (entryStr1 <> "" And entryStr2 <> "") Then
         If (currentEntry1 Like "*" & entryStr1 & "*") _
         And (currentEntry2 Like "*" & entryStr2 & "*") Then
-            ws.Rows(inverseRowNum).Delete shift:=xlUp
+            ws.Rows(inverseRowNum).Delete Shift:=xlUp
         End If
     End If
     
@@ -2261,25 +2290,25 @@ If (InStr(1, ws.Cells(2, FieldColNum(ws, fieldName)), entryToKeep1) <= 0) Then
     endRow = FieldRowNum(ws, entryToKeep1, FieldColNum(ws, fieldName), , , True) - 1
     If endRow = -1 Then Debug.Print ("Function 'DeleteOtherRecord' did not find entryToKeep1: '" & entryToKeep1 & "'")
     If endRow = -1 Then Exit Sub
-    ws.Rows(CStr(startRow) & ":" & CStr(endRow)).Delete shift:=xlUp
+    ws.Rows(CStr(startRow) & ":" & CStr(endRow)).Delete Shift:=xlUp
 Else
     startRow = FieldRowNum(ws, entryToKeep1, FieldColNum(ws, fieldName), , , , True) + 1
     endRow = lastRow(ws)
     If (startRow > endRow) Then Exit Sub
-    ws.Rows(CStr(startRow) & ":" & CStr(endRow)).Delete shift:=xlUp
+    ws.Rows(CStr(startRow) & ":" & CStr(endRow)).Delete Shift:=xlUp
     Exit Sub
 End If
 
 If (InStr(1, LCase(ws.Cells(lastRow(ws), FieldColNum(ws, fieldName))), LCase(entryToKeep1)) <= 0) Then
     startRow = FieldRowNum(ws, entryToKeep1, FieldColNum(ws, fieldName), , , , True) + 1
     endRow = lastRow(ws)
-    ws.Rows(CStr(startRow) & ":" & CStr(endRow)).Delete shift:=xlUp
+    ws.Rows(CStr(startRow) & ":" & CStr(endRow)).Delete Shift:=xlUp
 End If
 
 End Sub
 Public Function DirExists(ByVal directoryPath As String) As Boolean
 '**Authored by Nathan N 2/16/2012 **
-    If Len(dir(directoryPath, vbDirectory)) = 0 Then
+    If Len(Dir(directoryPath, vbDirectory)) = 0 Then
         DirExists = False
     Else
         DirExists = True
@@ -2311,7 +2340,7 @@ If adminEmail = "" Then
     adminEmail = "someone who can help"
     adminFirstName = "Hello"
 Else
-    adminFirstName = FirstName(left(adminEmail, InStr(1, adminEmail, "@")))
+    adminFirstName = FirstName(Left(adminEmail, InStr(1, adminEmail, "@")))
 End If
 '----------------------------------------------------------------------------------------------------------------
 '// Set message template to admin and / or user
@@ -2371,3 +2400,142 @@ NextItem:
 Next i
 
 End Sub
+Public Sub deleteColRange(ByVal startCol As Integer, ByVal endCol As Integer)
+'// Enables the deletion by range numbers, otherwise columns have to be deleted one-by-one,
+'// or using letters, which is rather inconvenient.
+'// Authored by Nathan N on 4.18.2014
+
+Dim colArray As Variant
+Dim colRange As Range
+Dim rangeIter As Integer
+Dim i As Long
+
+colArray = ""
+rangeIter = endCol - startCol
+
+For i = 0 To rangeIter
+    colArray = colArray & Str(startCol + i) & ","
+Next i
+
+colArray = Left(colArray, Len(colArray) - 1)
+colArray = Split(colArray, ",")
+
+Set colRange = Columns(colArray(0))
+For i = 1 To UBound(colArray)
+    Set colRange = Union(colRange, Columns(colArray(i)))
+Next i
+
+colRange.Delete Shift:=xlToLeft
+
+End Sub
+Public Sub listifyAndJsonify()
+'// Turns two rows of data into a List (array) and JSON formatted data
+'// i.e. [{"City":"San Jose, "Lat":0.3,"Lon":1.4},{"City":"Austin","Lat":0.5, "Lon":11.1}]
+'/ Output will be on the first row of the third column: cell(1,3)
+'// This function must be run  from the VBA IDE.
+
+Dim wb As Workbook
+Dim ws As Worksheet
+Dim wbName As String, wsName As String
+Dim key0 As String, key1 As String
+Dim value0 As String, value1 As String
+Dim s As String
+Dim i As Long
+
+
+
+key = ""
+s = ""
+
+While wbName = ""
+workbookname:
+    wbName = ""
+    wbName = InputBox("Workbook name?")
+Wend
+
+On Error GoTo workbookname
+Set wb = Workbooks(wbName)
+On Error GoTo 0
+
+While wsName = ""
+    wsName = ""
+    wsName = InputBox("Sheet Name?")
+    If Not SheetExists(wb, wsName) Then
+        wsName = ""
+    End If
+Wend
+While key0 = ""
+    key0 = InputBox("Key0 name?")
+Wend
+While key1 = ""
+    key1 = InputBox("Key1 name?")
+Wend
+
+
+
+
+Set ws = wb.Worksheets(wsName)
+
+
+If VarType(ws.Cells(2, 2)) = vbDouble Then
+    quoteString = ""
+Else
+    quoteString = """"
+End If
+
+For i = 2 To lastRow(ws)
+    value0 = ws.Cells(i, 1)
+    value1 = ws.Cells(i, 2)
+    s = s & "{" & """" & key0 & """" & ":" & """" & value0 & """" & "," & """" & key1 & """" & ":" & quoteString & value1 & quoteString & "},"
+Next i
+
+'// Remove the extra comma at the end of the string
+s = Left(s, Len(s) - 1)
+ws.Cells(1, 3) = "[" & s & "]"
+
+End Sub
+Function Get_Variable_Type(myVar)
+
+' ---------------------------------------------------------------
+' Written By Shanmuga Sundara Raman for http://vbadud.blogspot.com
+' ---------------------------------------------------------------
+
+If VarType(myVar) = vbNull Then
+MsgBox "Null (no valid data) "
+ElseIf VarType(myVar) = vbInteger Then
+MsgBox "Integer "
+ElseIf VarType(myVar) = vbLong Then
+MsgBox "Long integer "
+ElseIf VarType(myVar) = vbSingle Then
+MsgBox "Single-precision floating-point number "
+ElseIf VarType(myVar) = vbDouble Then
+MsgBox "Double-precision floating-point number "
+ElseIf VarType(myVar) = vbCurrency Then
+MsgBox "Currency value "
+ElseIf VarType(myVar) = vbDate Then
+MsgBox "Date value "
+ElseIf VarType(myVar) = vbString Then
+MsgBox "String "
+ElseIf VarType(myVar) = vbObject Then
+MsgBox "Object "
+ElseIf VarType(myVar) = vbError Then
+MsgBox "Error value "
+ElseIf VarType(myVar) = vbBoolean Then
+MsgBox "Boolean value "
+ElseIf VarType(myVar) = vbVariant Then
+MsgBox "Variant (used only with arrays of variants) "
+ElseIf VarType(myVar) = vbDataObject Then
+MsgBox "A data access object "
+ElseIf VarType(myVar) = vbDecimal Then
+MsgBox "Decimal value "
+ElseIf VarType(myVar) = vbByte Then
+MsgBox "Byte value "
+ElseIf VarType(myVar) = vbUserDefinedType Then
+MsgBox "Variants that contain user-defined types "
+ElseIf VarType(myVar) = vbArray Then
+MsgBox "Array "
+Else
+MsgBox VarType(myVar)
+End If
+
+End Function

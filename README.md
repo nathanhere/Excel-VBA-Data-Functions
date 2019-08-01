@@ -1,3 +1,5 @@
+![Excel Logo Banner](https://i2.wp.com/blog.discudemy.com/wp-content/uploads/2017/11/connector-excel-logo.png)
+
 Excel VBA Functions Package for Business Data Analysts
 ===
 Created to facilitate data processing and analysis at the business operations level. Common functions used for Excel-based projects / reports / apps requiring extensive data manipulation. 
@@ -15,7 +17,7 @@ If the last row of data is located on row 15, this routine will select cells A1:
 Set ws = workbooks("currentOpenWorkbook.xlsx").worksheets("Sheet1")
 ws.cells(lastRow(ws),3).select
 ```
-Where lastRow(ws) returns the **last row number** of worksheet **ws**, and **3** is Column C (the third column in a worksheet).
+Where `lastRow(ws)` returns the **last row number** of worksheet **ws**, and **`3`** is Column C (the third column in a worksheet).
 
 Please feel free to contact me for any help/clarification.
 

@@ -7,10 +7,18 @@ Drag and drop the .bas file as a module in the VBA editor.
 Requires a basic understanding of how to use functions within VBA. For an overview, please visit http://www.excel-vba-easy.com/vba-programming-function-sub.html or http://www.excelfunctions.net/VBA-Functions-And-Subroutines.html.
 
 Note that most functions included in this package require a worksheet object as the first argument.
-### Example using the lastRow function:
-	
-	' If the last row of data is located on row 15, this routine will select cells A1:C15
-    Set ws = workbooks("currentOpenWorkbook.xlsx").worksheets("Sheet1")
-    ws.cells(lastRow(ws),3).select
+
+### Example using the lastRow function: ###
+
+If the last row of data is located on row 15, this routine will select cells A1:C15
+```vba
+Set ws = workbooks("currentOpenWorkbook.xlsx").worksheets("Sheet1")
+ws.cells(lastRow(ws),3).select
+```
+Where lastRow(ws) returns the **last row number** of worksheet **ws**, and **3** is Column C (the third column in a worksheet).
 
 Please feel free to contact me for any help/clarification.
+
+# License #
+
+This software is available under the MIT license.

@@ -1,4 +1,4 @@
-![Excel Logo Banner](https://i2.wp.com/blog.discudemy.com/wp-content/uploads/2017/11/connector-excel-logo.png)
+![Excel Logo Banner](https://www.versionmuseum.com/images/applications/microsoft-excel/microsoft-excel%5E2016%5Eexcel-logo-new.png)
 
 Excel VBA Functions Package for Business Data Analysts
 ===
